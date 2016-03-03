@@ -10,7 +10,7 @@ import UIKit
 
 class AFCollectionViewCell: UICollectionViewCell,UIGestureRecognizerDelegate {
     
-    var shake:((shake:Bool)->())?
+    
     var iconButton:UIButton?
     var nameLabel:UILabel?
     var leftView:UIView?
@@ -70,18 +70,11 @@ class AFCollectionViewCell: UICollectionViewCell,UIGestureRecognizerDelegate {
 //        rightView!.backgroundColor = RandomColor()
         addSubview(rightView!)
         
-        let longPress = UILongPressGestureRecognizer(target: self, action: "longPress:")
-        longPress.minimumPressDuration = 1;
-        longPress.allowableMovement = 80;
-
-        self.iconButton!.addGestureRecognizer(longPress)
+       
 
     }
     
-    @objc func longPress(sender:UILongPressGestureRecognizer){
-        shake!(shake:true)
     
-    }
     @objc func iconButtonPress(){
         print(nameLabel!.text!)
     }

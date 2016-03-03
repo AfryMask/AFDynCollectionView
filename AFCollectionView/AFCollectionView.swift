@@ -44,15 +44,49 @@ class AFCollectionView: UICollectionView,UICollectionViewDataSource,UIGestureRec
         homeButton.addTarget(self, action: "homeButtonClick", forControlEvents: .TouchUpInside)
         addSubview(homeButton)
         
+        
+        // 拖拽手势
+        let panPress = UIPanGestureRecognizer(target: self, action: "pan:")
+        self.addGestureRecognizer(panPress)
+        
+        // 长按手势
+        let longPress = UILongPressGestureRecognizer(target: self, action: "longPress:")
+        self.addGestureRecognizer(longPress)
+        
     }
-
+    
+    @objc func longPress(sender:UILongPressGestureRecognizer){
+        
+        if sender.state == .Began {
+            AFTouchesBegan(sender.locationInView(self))
+        }else if sender.state == .Changed{
+            AFTouchesMoved(sender.locationInView(self))
+        }else if sender.state == .Ended{
+            AFTouchesEnded()
+        }
+    }
+    
+    @objc func pan(sender:UIPanGestureRecognizer){
+        
+        if shaking{
+            if sender.state == .Began {
+                AFTouchesBegan(sender.locationInView(self))
+            }else if sender.state == .Changed{
+                AFTouchesMoved(sender.locationInView(self))
+            }else if sender.state == .Ended{
+                AFTouchesEnded()
+            }
+        }
+    }
+    
+    
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
     // home键点击，关闭抖动
     func homeButtonClick(){
-        setAnimate(false)
+        shaking = false
     }
 
     
@@ -65,82 +99,10 @@ class AFCollectionView: UICollectionView,UICollectionViewDataSource,UIGestureRec
         collectionView
         let cell = collectionView.dequeueReusableCellWithReuseIdentifier("cell", forIndexPath: indexPath) as! AFCollectionViewCell
         cell.nameLabel!.text = "\(indexPath.item)"
-        
+        cell.userInteractionEnabled = false
         // 对cell传入闭包
-        cell.shake = setAnimate
         
         return cell
-    }
-    
-    // 设置是否开启动画效果
-    private func setAnimate(shake:Bool){
-        
-        
-        
-        for i in 0..<self.visibleCells().count {
-            
-            let cell = cellForItemAtIndexPath(NSIndexPath(forRow: i, inSection: 0))
-            // 根据传入的bool值设置是否开始抖动
-            if shake {
-                
-                // 私有函数，返回根据一个浮点数，返回这个浮点数与其相反数之间的随机数
-                func getRandom(max:CGFloat) -> CGFloat{
-                    let firstAnim1 = (CGFloat(random()%100)*0.6 + 40) / 100 * max
-                    return firstAnim1 * CGFloat( M_PI_4)
-                }
-                // 私有函数，返回一个随机的正或负
-                func getRandomSymbol() -> CGFloat{
-                    return random()%2 == 1 ? 1.0 : -1.0
-                }
-                
-                // 三个方向的动画设定
-                let anim1 = CAKeyframeAnimation()
-                let maxAnim1:CGFloat = 0.05
-                let firstAnim1:CGFloat = getRandom(maxAnim1)
-                let symbol1 = getRandomSymbol()
-                
-                anim1.keyPath = "transform.rotation"
-                anim1.values = [firstAnim1*symbol1, maxAnim1*symbol1, -maxAnim1*symbol1, firstAnim1*symbol1]
-                
-                let anim2 = CAKeyframeAnimation()
-                let maxAnim2:CGFloat = 0.5
-                let firstAnim2:CGFloat = getRandom(maxAnim2)
-                let symbol2 = getRandomSymbol()
-                
-                anim2.keyPath = "transform.translation.y"
-                anim2.values = [firstAnim2*symbol2, maxAnim2*symbol2, -maxAnim2*symbol2, firstAnim2*symbol2]
-                
-                let anim3 = CAKeyframeAnimation()
-                let maxAnim3:CGFloat = 0.5
-                let firstAnim3:CGFloat = getRandom(maxAnim2)
-                let symbol3 = getRandomSymbol()
-                
-                anim3.keyPath = "transform.translation.x"
-                anim3.values = [firstAnim3*symbol3, maxAnim3*symbol3, -maxAnim3*symbol3, firstAnim3*symbol3]
-                
-                let animaGroup = CAAnimationGroup()
-                animaGroup.animations = [anim1, anim2, anim3]
-                animaGroup.repeatCount = Float(INT_MAX)
-                animaGroup.duration = 0.22
-                cell!.layer.addAnimation(animaGroup, forKey: nil)
-                
-            }else {
-                // 关闭抖动效果
-                cell!.layer.removeAllAnimations()
-            }
-            
-            // 设定cell可否点击
-            cell!.userInteractionEnabled = !shake
-            
-        }
-        
-        if shake {
-//            moveBegan()
-        }
-        
-        // 保存动画状态
-        isShaking = !shake
-    
     }
     
     // 可动view
@@ -150,7 +112,65 @@ class AFCollectionView: UICollectionView,UICollectionViewDataSource,UIGestureRec
     // 光标经过某点的中介值
     var timeIndex:NSIndexPath?
     // 是否正在动画
-    var isShaking = false
+    var shaking = false {
+        didSet{
+            for i in 0..<self.visibleCells().count {
+                
+                let cell = cellForItemAtIndexPath(NSIndexPath(forRow: i, inSection: 0))
+                // 根据传入的bool值设置是否开始抖动
+                if shaking {
+                    
+                    // 私有函数，返回根据一个浮点数，返回这个浮点数与其相反数之间的随机数
+                    func getRandom(max:CGFloat) -> CGFloat{
+                        let firstAnim1 = (CGFloat(random()%100)*0.6 + 40) / 100 * max
+                        return firstAnim1 * CGFloat( M_PI_4)
+                    }
+                    // 私有函数，返回一个随机的正或负
+                    func getRandomSymbol() -> CGFloat{
+                        return random()%2 == 1 ? 1.0 : -1.0
+                    }
+                    
+                    // 三个方向的动画设定
+                    let anim1 = CAKeyframeAnimation()
+                    let maxAnim1:CGFloat = 0.05
+                    let firstAnim1:CGFloat = getRandom(maxAnim1)
+                    let symbol1 = getRandomSymbol()
+                    
+                    anim1.keyPath = "transform.rotation"
+                    anim1.values = [firstAnim1*symbol1, maxAnim1*symbol1, -maxAnim1*symbol1, firstAnim1*symbol1]
+                    
+                    let anim2 = CAKeyframeAnimation()
+                    let maxAnim2:CGFloat = 0.5
+                    let firstAnim2:CGFloat = getRandom(maxAnim2)
+                    let symbol2 = getRandomSymbol()
+                    
+                    anim2.keyPath = "transform.translation.y"
+                    anim2.values = [firstAnim2*symbol2, maxAnim2*symbol2, -maxAnim2*symbol2, firstAnim2*symbol2]
+                    
+                    let anim3 = CAKeyframeAnimation()
+                    let maxAnim3:CGFloat = 0.5
+                    let firstAnim3:CGFloat = getRandom(maxAnim2)
+                    let symbol3 = getRandomSymbol()
+                    
+                    anim3.keyPath = "transform.translation.x"
+                    anim3.values = [firstAnim3*symbol3, maxAnim3*symbol3, -maxAnim3*symbol3, firstAnim3*symbol3]
+                    
+                    let animaGroup = CAAnimationGroup()
+                    animaGroup.animations = [anim1, anim2, anim3]
+                    animaGroup.repeatCount = Float(INT_MAX)
+                    animaGroup.duration = 0.22
+                    cell!.layer.addAnimation(animaGroup, forKey: nil)
+                    
+                }else {
+                    // 关闭抖动效果
+                    cell!.layer.removeAllAnimations()
+                }
+                
+            }
+        
+        
+        }
+    }
     // item数量
     var itemCount = 0
     // 选中的点
@@ -161,49 +181,48 @@ class AFCollectionView: UICollectionView,UICollectionViewDataSource,UIGestureRec
 extension AFCollectionView{
     
 
-    
-    override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
-        // 如果正在抖动，返回
-
-        if isShaking {
-            return
-        }
-        let touch = touches.first
-        p = touch!.locationInView(self)
+    func AFTouchesBegan(p:CGPoint) {
+        print("toubegan")
+        
         if let index = self.indexPathForItemAtPoint(p) {
-            let cell = self.cellForItemAtIndexPath(index)! as! AFCollectionViewCell
-            
-            let inFrame = CGRectMake(
-                cell.frame.origin.x+cell.iconButton!.frame.origin.x,
-                cell.frame.origin.y+cell.iconButton!.frame.origin.y,
-                cell.iconButton!.frame.width,
-                cell.iconButton!.frame.height)
-            
-            if CGRectContainsPoint(inFrame, p){
-                cell.hidden = true
-                
-                moveView!.iconButton!.backgroundColor = cell.iconButton!.backgroundColor
-                
-                moveView!.layer.anchorPoint = CGPointMake(
-                    (p.x - cell.frame.origin.x)/cell.frame.width,
-                    (p.y - cell.frame.origin.y)/cell.frame.height)
-                
-                
-                moveView!.nameLabel!.text = cell.nameLabel!.text
-                moveView!.center = p
-                moveView!.hidden = false
-                bringSubviewToFront(moveView!)
+
                 selectedIndex = index
+            
+            if let indexPath = self.indexPathForItemAtPoint(p) {
+                shaking = true
+                
+                let cell = self.cellForItemAtIndexPath(indexPath)! as! AFCollectionViewCell
+                
+                let inFrame = CGRectMake(
+                    cell.frame.origin.x+cell.iconButton!.frame.origin.x,
+                    cell.frame.origin.y+cell.iconButton!.frame.origin.y,
+                    cell.iconButton!.frame.width,
+                    cell.iconButton!.frame.height)
+                
+                if CGRectContainsPoint(inFrame, p){
+                    cell.hidden = true
+                    
+                    moveView!.iconButton!.backgroundColor = cell.iconButton!.backgroundColor
+                    
+                    moveView!.layer.anchorPoint = CGPointMake(
+                        (p.x - cell.frame.origin.x)/cell.frame.width,
+                        (p.y - cell.frame.origin.y)/cell.frame.height)
+                    
+                    
+                    moveView!.nameLabel!.text = cell.nameLabel!.text
+                    moveView!.center = p
+                    moveView!.hidden = false
+                    bringSubviewToFront(moveView!)
+                }
+                
+                
             }
         }
         
     }
     
-    
-    override func touchesMoved(touches: Set<UITouch>, withEvent event: UIEvent?) {
-        
-        let touch = touches.first
-        let p = touch!.locationInView(self)
+
+    func AFTouchesMoved(p: CGPoint) {
         
         guard let _ = selectedIndex else {return}
         
@@ -266,9 +285,9 @@ extension AFCollectionView{
             
         
     }
-    
-    override func touchesEnded(touches: Set<UITouch>, withEvent event: UIEvent?) {
-        
+//
+    func AFTouchesEnded() {
+        print("touchesEnd")
         guard let _ = selectedIndex else {return}
         let cell = self.cellForItemAtIndexPath(selectedIndex!)!
         
@@ -284,11 +303,6 @@ extension AFCollectionView{
                 self.timeIndex = nil
                 self.selectedIndex = nil
         }
-        
-        
-        
-        
-        
     }
 
 }
